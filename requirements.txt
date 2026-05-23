@@ -1,4 +1,2 @@
 streamlit
 crewai[litellm]>=0.100.0
-langchain-community
-duckduckgo-search
