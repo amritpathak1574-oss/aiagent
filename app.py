@@ -1,7 +1,6 @@
 import streamlit as st
 import os
-from crewai import Agent, Task, Crew
-from langchain_groq import ChatGroq
+from crewai import Agent, Task, Crew, LLM
 
 # Streamlit Page Configuration
 st.set_page_config(page_title="Groq AI Agent Dashboard", page_icon="🤖", layout="wide")
@@ -33,15 +32,14 @@ if st.button("🚀 Run Agent Task"):
     elif not task_input.strip():
         st.warning("Kuch task toh likho jise Agent execute kare!")
     else:
-        # Groq API key set karein
-        os.environ["GROQ_API_KEY"] = groq_api_key
-        
         with st.spinner("🤖 Agent dimaag chala raha hai... Please wait..."):
             try:
-                # 1. Groq LLM Initialize karein (Naye CrewAI/Langchain standard ke hisab se)
-                llm = ChatGroq(
-                    temperature=0.0,
-                    model_name=model_choice
+                # 1. CrewAI Native LLM class use karke Groq connect karein
+                # Isse Pydantic v2 validation error 100% fix ho jata hai
+                agent_llm = LLM(
+                    model=f"groq/{model_choice}",
+                    api_key=groq_api_key,
+                    temperature=0.0
                 )
                 
                 # 2. Agent Define karein
@@ -52,7 +50,7 @@ if st.button("🚀 Run Agent Task"):
                     break it down logically, and deliver the perfect final result without any fluff.""",
                     verbose=True,
                     allow_delegation=False,
-                    llm=llm
+                    llm=agent_llm
                 )
                 
                 # 3. Task create karein
@@ -62,7 +60,7 @@ if st.button("🚀 Run Agent Task"):
                     agent=task_runner_agent
                 )
                 
-                # 4. Crew setup karein (Naye version me process="sequential" ya default chhod sakte hain)
+                # 4. Crew setup karein
                 agent_crew = Crew(
                     agents=[task_runner_agent],
                     tasks=[custom_task]
@@ -75,7 +73,7 @@ if st.button("🚀 Run Agent Task"):
                 st.success("✅ Task Completed Successfully!")
                 st.subheader("🏁 Agent Final Output:")
                 
-                # Naye CrewAI versions me output raw text nikalne ke liye str() ya .raw use karte hain
+                # Output ko string me cast karke display karein
                 st.markdown(str(final_result))
                 
             except Exception as e:
