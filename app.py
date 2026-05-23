@@ -1,80 +1,92 @@
 import streamlit as st
 import os
 from crewai import Agent, Task, Crew, LLM
+from crewai_tools import DuckDuckGoSearchRun
 
 # Streamlit Page Configuration
-st.set_page_config(page_title="Groq AI Agent Dashboard", page_icon="🤖", layout="wide")
+st.set_page_config(page_title="Supercharged Groq Agent", page_icon="🚀", layout="wide")
 
-st.title("🤖 Groq Ultra-Fast AI Agent Dashboard")
-st.write("Yeh ek autonomous AI Agent hai jo background me aapke tasks ko execute karta hai.")
+st.title("🚀 Supercharged Groq AI Agent (With Live Web Search)")
+st.write("Yeh agent live internet search kar sakta hai aur output file download karne ka option deta hai!")
 
-# Sidebar me API Key aur Model select karne ka option
+# Free DuckDuckGo Search Tool Initialize karein
+search_tool = DuckDuckGoSearchRun()
+
+# Sidebar Setup
 with st.sidebar:
     st.header("⚙️ Configuration")
     groq_api_key = st.text_input("Enter Groq API Key:", type="password")
     
     model_choice = st.selectbox(
         "Select Groq Model:",
-        ["llama3-70b-8192", "llama-3.3-70b-versatile", "mixtral-8x7b-32768"]
+        ["llama3-70b-8192", "llama3-8b-8192", "mixtral-8x7b-32768"]
     )
-    
-    st.info("💡 Pro Tip: Agentic reasoning ke liye Llama3-70b sabse best model hai.")
+    st.info("💡 Llama3-70b tools ko sabse achhe se use karna jaanta hai.")
 
-# Main Interface for Task Input
+# Main Task Input
 task_input = st.text_area(
-    "📝 Agent ko kya task dena hai?", 
-    placeholder="Example: Write a Python script to sort files in a folder based on extensions."
+    "📝 Agent ko kya task ya research kaam dena hai?", 
+    placeholder="Example: Search the internet for latest Python 3.14 features and summarize them."
 )
 
-if st.button("🚀 Run Agent Task"):
+if st.button("🔥 Run Advanced Agent"):
     if not groq_api_key:
-        st.error("Bhai, pehle sidebar me Groq API Key toh daalo! 😅")
+        st.error("Bhai, pehle sidebar me Groq API Key daalo! 😅")
     elif not task_input.strip():
-        st.warning("Kuch task toh likho jise Agent execute kare!")
+        st.warning("Kuch task toh likho!")
     else:
-        with st.spinner("🤖 Agent dimaag chala raha hai... Please wait..."):
+        with st.spinner("🕵️‍♂️ Agent internet par research kar raha hai aur dimaag chala raha hai..."):
             try:
-                # 1. CrewAI Native LLM class use karke Groq connect karein
-                # Isse Pydantic v2 validation error 100% fix ho jata hai
+                # 1. Native LLM Setup
                 agent_llm = LLM(
                     model=f"groq/{model_choice}",
                     api_key=groq_api_key,
-                    temperature=0.0
+                    temperature=0.2  # Thoda sa temperature badhaya taaki research me achha likhe
                 )
                 
-                # 2. Agent Define karein
-                task_runner_agent = Agent(
-                    role='Expert Execution Specialist',
-                    goal='To execute complex logical, analytical, or coding tasks flawlessly.',
-                    backstory="""You are an elite autonomous agent. You take a core task, 
-                    break it down logically, and deliver the perfect final result without any fluff.""",
+                # 2. Agent with TOOLS
+                researcher_agent = Agent(
+                    role='Advanced Research and Execution Specialist',
+                    goal='To look up information on the internet and execute tasks with absolute accuracy.',
+                    backstory="""You are an elite autonomous agent equipped with internet access. 
+                    When asked about recent events or technical data, you use your search tool to find facts first, 
+                    then synthesize a flawless response.""",
                     verbose=True,
                     allow_delegation=False,
-                    llm=agent_llm
+                    llm=agent_llm,
+                    tools=[search_tool]  # <-- Isse agent ko internet access mil gaya!
                 )
                 
-                # 3. Task create karein
+                # 3. Task Setup
                 custom_task = Task(
                     description=task_input,
-                    expected_output='The complete, fully executed response or solution to the user\'s request.',
-                    agent=task_runner_agent
+                    expected_output='A highly comprehensive, factual response backed by the latest web search data if needed.',
+                    agent=researcher_agent
                 )
                 
-                # 4. Crew setup karein
+                # 4. Crew Setup
                 agent_crew = Crew(
-                    agents=[task_runner_agent],
+                    agents=[researcher_agent],
                     tasks=[custom_task]
                 )
                 
-                # Execution shuru karein
+                # Execute
                 final_result = agent_crew.kickoff()
+                result_text = str(final_result)
                 
-                # 5. UI par Output dikhayein
+                # 5. UI Output Display
                 st.success("✅ Task Completed Successfully!")
                 st.subheader("🏁 Agent Final Output:")
+                st.markdown(result_text)
                 
-                # Output ko string me cast karke display karein
-                st.markdown(str(final_result))
+                # --- NEW FEATURE: DOWNLOAD BUTTON ---
+                st.write("---")
+                st.download_button(
+                    label="📥 Download Output as Markdown (.md)",
+                    data=result_text,
+                    file_name="agent_output.md",
+                    mime="text/markdown"
+                )
                 
             except Exception as e:
                 st.error(f"Oops! Kuch dikkat aayi bhai: {e}")
