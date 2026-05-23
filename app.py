@@ -1,7 +1,8 @@
 import streamlit as st
 import os
 from crewai import Agent, Task, Crew, LLM
-from crewai_tools import DuckDuckGoSearchRun
+# Naya safe aur direct import path
+from langchain_community.tools import DuckDuckGoSearchRun
 
 # Streamlit Page Configuration
 st.set_page_config(page_title="Supercharged Groq Agent", page_icon="🚀", layout="wide")
@@ -9,7 +10,7 @@ st.set_page_config(page_title="Supercharged Groq Agent", page_icon="🚀", layou
 st.title("🚀 Supercharged Groq AI Agent (With Live Web Search)")
 st.write("Yeh agent live internet search kar sakta hai aur output file download karne ka option deta hai!")
 
-# Free DuckDuckGo Search Tool Initialize karein
+# Safe DuckDuckGo Search Tool Initialize karein
 search_tool = DuckDuckGoSearchRun()
 
 # Sidebar Setup
@@ -26,7 +27,7 @@ with st.sidebar:
 # Main Task Input
 task_input = st.text_area(
     "📝 Agent ko kya task ya research kaam dena hai?", 
-    placeholder="Example: Search the internet for latest Python 3.14 features and summarize them."
+    placeholder="Example: Search the internet for latest AI news and summarize them."
 )
 
 if st.button("🔥 Run Advanced Agent"):
@@ -35,13 +36,13 @@ if st.button("🔥 Run Advanced Agent"):
     elif not task_input.strip():
         st.warning("Kuch task toh likho!")
     else:
-        with st.spinner("🕵️‍♂️ Agent internet par research kar raha hai aur dimaag chala raha hai..."):
+        with st.spinner("🕵️‍♂️ Agent internet par research kar raha hai..."):
             try:
                 # 1. Native LLM Setup
                 agent_llm = LLM(
                     model=f"groq/{model_choice}",
                     api_key=groq_api_key,
-                    temperature=0.2  # Thoda sa temperature badhaya taaki research me achha likhe
+                    temperature=0.2
                 )
                 
                 # 2. Agent with TOOLS
@@ -54,7 +55,7 @@ if st.button("🔥 Run Advanced Agent"):
                     verbose=True,
                     allow_delegation=False,
                     llm=agent_llm,
-                    tools=[search_tool]  # <-- Isse agent ko internet access mil gaya!
+                    tools=[search_tool]  # <-- Connected nicely
                 )
                 
                 # 3. Task Setup
@@ -79,7 +80,7 @@ if st.button("🔥 Run Advanced Agent"):
                 st.subheader("🏁 Agent Final Output:")
                 st.markdown(result_text)
                 
-                # --- NEW FEATURE: DOWNLOAD BUTTON ---
+                # Download Button
                 st.write("---")
                 st.download_button(
                     label="📥 Download Output as Markdown (.md)",
