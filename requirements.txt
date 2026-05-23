@@ -1,2 +1,2 @@
 streamlit
-crewai>=0.100.0
+crewai[litellm]>=0.100.0
