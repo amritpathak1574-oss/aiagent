@@ -50,7 +50,7 @@ with st.sidebar:
     
     model_choice = st.selectbox(
         "Select Groq Model:",
-        ["llama3-70b-8192", "llama3-8b-8192", "mixtral-8x7b-32768"]
+        ["llama3-70b-8192", "llama-3.3-70b-versatile", "mixtral-8x7b-32768"]
     )
     st.info("💡 Llama3-70b custom tools ko sabse achhe se execute karta hai.")
 
