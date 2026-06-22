@@ -11,13 +11,14 @@ st.set_page_config(page_title="Manus-Style Hierarchical Crew", page_icon="🧠",
 st.title("🧠 Hierarchical AI Crew (Manus AI Lite Architecture)")
 st.write("Isme ek Manager, ek Coder, aur ek Reviewer agent milkar aapka kaam karte hain aur code execute bhi kar sakte hain!")
 
-# --- TOOL 1: WEB SEARCH TOOL ---
-@tool("Web Search Tool")
+# --- TOOL 1: FIXED WEB SEARCH TOOL ---
+# Iska naam humne 'web_search' kar diya hai, taaki LLM confuse na ho
+@tool("web_search")
 def custom_search_tool(query: str) -> str:
-    """Search the internet for any given query to get the latest 2026 data."""
+    """Useful to search the internet for web results, latest news, and articles about any topic. Input should be a simple search query string."""
     try:
         url = f"https://html.duckduckgo.com/html/?q={query}"
-        headers = {"User-Agent": "Mozilla/5.0"}
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
         response = requests.get(url, headers=headers, timeout=10)
         if response.status_code == 200:
             text = response.text
@@ -30,13 +31,13 @@ def custom_search_tool(query: str) -> str:
                 end = text.find('</a>', start)
                 snippets.append(text[start:end].replace('<b>', '').replace('</b>', '').strip())
                 start = end
-            return "\n\n".join(snippets) if snippets else "No results found."
-        return "Search failed."
+            return "\n\n".join(snippets) if snippets else "No results found on the internet."
+        return "Search failed due to network error."
     except Exception as e:
-        return f"Error: {str(e)}"
+        return f"Error executing search: {str(e)}"
 
 # --- TOOL 2: PYTHON REPL / CODE EXECUTOR TOOL ---
-@tool("Python Code Executor")
+@tool("python_code_executor")
 def python_executor_tool(code: str) -> str:
     """Execute arbitrary Python code securely in the background and return stdout/stderr output. Use this to verify scripts or run calculations."""
     import sys
@@ -58,7 +59,7 @@ def python_executor_tool(code: str) -> str:
         return f"Execution Error: {str(e)}"
 
 # --- TOOL 3: FILE WRITER & ZIPPER TOOL ---
-@tool("File Creator and Zipper")
+@tool("file_creator_and_zipper")
 def file_creator_tool(filename: str, content: str) -> str:
     """Create a file with specific content and automatically pack it into a deployable zip file called 'project_output.zip'."""
     try:
@@ -74,7 +75,7 @@ def file_creator_tool(filename: str, content: str) -> str:
         return f"File Creation Error: {str(e)}"
 
 
-# Sidebar Configuration (Token Optimized & Decommission Safe)
+# Sidebar Configuration
 with st.sidebar:
     st.header("⚙️ Crew Configuration")
     groq_api_key = st.text_input("Enter Groq API Key:", type="password")
@@ -87,12 +88,12 @@ with st.sidebar:
             "gemma2-9b-it"                # Fast and efficient fallback
         ]
     )
-    st.info("💡 Bhai, token limit se bachne ke liye 'llama-3.1-8b-instant' use karo, yeh ekdum smooth aur tez chalta hai!")
+    st.info("💡 Bhai, function validation error se bachne ke liye 'llama-3.3-70b-versatile' use karein toh better hai, woh tools sahi se call karta hai.")
 
 # Main input layout
 task_input = st.text_area(
     "🛸 Apni team ko bada task assign karein:", 
-    placeholder="Example: Search for 2026 AI trends, write a python code to print them, run the code, and save it to a file named trends.py"
+    placeholder="Example: Search for Claude Fable 5, write a python code to print it, run the code, and save it to a file named fable.py"
 )
 
 if st.button("🚀 Activate Hierarchical Crew"):
@@ -101,21 +102,21 @@ if st.button("🚀 Activate Hierarchical Crew"):
     elif not task_input.strip():
         st.warning("Kuch task toh batao team ko!")
     else:
-        with st.spinner("🕵️‍♂️ Team planning aur execution kar rahi hai... Thoda sabr rakhein, kamaal ka output aayega!"):
+        with st.spinner("🕵️‍♂️ Team function validation checks clear karke kaam shuru kar rahi hai..."):
             try:
-                # Optimized LLM Instance (Restricted tokens to avoid rate limits)
+                # Optimized LLM Instance
                 agent_llm = LLM(
                     model=f"groq/{model_choice}",
                     api_key=groq_api_key,
                     temperature=0.1,
-                    max_tokens=1000  # Token saving parameter
+                    max_tokens=1000
                 )
                 
                 # 1. CODER AGENT
                 coder_agent = Agent(
                     role='Python Developer',
-                    goal='Write clean code, run web searches, and use tools to verify and save final scripts.',
-                    backstory='An expert programmer focused strictly on writing working code and saving it via tools.',
+                    goal='Write clean code, run web searches using web_search, and use tools to verify and save final scripts.',
+                    backstory='An expert programmer focused strictly on writing working code, using web_search for queries, and saving it via tools.',
                     llm=agent_llm,
                     tools=[custom_search_tool, python_executor_tool, file_creator_tool],
                     verbose=True
@@ -130,11 +131,11 @@ if st.button("🚀 Activate Hierarchical Crew"):
                     verbose=True
                 )
                 
-                # 3. MANAGER AGENT (No tools assigned)
+                # 3. MANAGER AGENT (Strictly Management - No tools)
                 manager_agent = Agent(
                     role='Project Manager',
                     goal='Deconstruct tasks logically, delegate tasks efficiently to workers, and compile concise results.',
-                    backstory='An efficient orchestrator who manages team workflow directly without text bloat.',
+                    backstory='An efficient orchestrator who manages team workflow directly without text bloat or tool confusion.',
                     llm=agent_llm,
                     verbose=True
                 )
