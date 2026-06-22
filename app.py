@@ -44,7 +44,8 @@ def python_executor_tool(code: str) -> str:
     
     if code.startswith("```python"):
         code = code[9:-3]
-    elif code.startswith("```"):
+    elif code.startswith("
+```"):
         code = code[3:-3]
         
     old_stdout = sys.stdout
@@ -74,21 +75,25 @@ def file_creator_tool(filename: str, content: str) -> str:
         return f"File Creation Error: {str(e)}"
 
 
-# Sidebar Configuration
+# Sidebar Configuration (Token Optimized & Decommission Safe)
 with st.sidebar:
     st.header("⚙️ Crew Configuration")
     groq_api_key = st.text_input("Enter Groq API Key:", type="password")
     
     model_choice = st.selectbox(
         "Select Core LLM Engine:",
-        ["llama-3.3-70b-versatile", "llama3-70b-8192", "llama3-8b-8192", "mixtral-8x7b-32768"]
+        [
+            "llama-3.1-8b-instant",       # High limit, zero rate limit error, super fast
+            "llama-3.3-70b-versatile",    # Ultra smart reasoning
+            "gemma2-9b-it"                # Fast and efficient fallback
+        ]
     )
-    st.info("💡 Pro Tip: 'llama-3.3-70b-versatile' naye tools aur complex workflow ke liye sabse best aur accurate hai.")
+    st.info("💡 Bhai, token limit se bachne ke liye 'llama-3.1-8b-instant' use karo, yeh ekdum smooth aur tez chalta hai!")
 
 # Main input layout
 task_input = st.text_area(
     "🛸 Apni team ko bada task assign karein:", 
-    placeholder="Example: Write a python script to calculate fibonacci series up to 10 numbers, execute it to verify if it works, and save it to a file."
+    placeholder="Example: Search for 2026 AI trends, write a python code to print them, run the code, and save it to a file named trends.py"
 )
 
 if st.button("🚀 Activate Hierarchical Crew"):
@@ -97,39 +102,40 @@ if st.button("🚀 Activate Hierarchical Crew"):
     elif not task_input.strip():
         st.warning("Kuch task toh batao team ko!")
     else:
-        with st.spinner("🕵️‍♂️ Manager Agent planning kar raha hai aur baaki team ko instructions bhej raha hai..."):
+        with st.spinner("🕵️‍♂️ Team planning aur execution kar rahi hai... Thoda sabr rakhein, kamaal ka output aayega!"):
             try:
-                # Common LLM instance
+                # Optimized LLM Instance (Restricted tokens to avoid rate limits)
                 agent_llm = LLM(
                     model=f"groq/{model_choice}",
                     api_key=groq_api_key,
-                    temperature=0.1
+                    temperature=0.1,
+                    max_tokens=1000  # Token saving parameter
                 )
                 
-                # 1. CODER AGENT (Ab saare tools iske paas hain!)
+                # 1. CODER AGENT (Short Backstory = Token Saved)
                 coder_agent = Agent(
-                    role='Senior Python Developer and Researcher',
-                    goal='Write clean, bug-free Python code, perform web searches if needed, and execute code using tools to verify it works flawlessly.',
-                    backstory='You are a master coder and analytical investigator. You can look up data, write scripts, test them using the Python Code Executor tool, and save final verified products.',
+                    role='Python Developer',
+                    goal='Write clean code, run web searches, and use tools to verify and save final scripts.',
+                    backstory='An expert programmer focused strictly on writing working code and saving it via tools.',
                     llm=agent_llm,
-                    tools=[custom_search_tool, python_executor_tool, file_creator_tool], # <-- Search tool yahan shift kar diya
+                    tools=[custom_search_tool, python_executor_tool, file_creator_tool],
                     verbose=True
                 )
                 
                 # 2. REVIEWER AGENT
                 reviewer_agent = Agent(
-                    role='Quality Assurance & Code Reviewer',
-                    goal='Review the code, audit the logical output, and check for any conceptual or security loopholes.',
-                    backstory='You are a meticulous inspector. You double-check the developer\'s work. If something is missing, you suggest final structural improvements before delivery.',
+                    role='Code Reviewer',
+                    goal='Review the code logic and ensure correctness before finalizing output.',
+                    backstory='A swift quality controller who verifies code accuracy without unnecessary words.',
                     llm=agent_llm,
                     verbose=True
                 )
                 
-                # 3. MANAGER AGENT (No tools assigned - Strictly Management)
+                # 3. MANAGER AGENT (No tools assigned)
                 manager_agent = Agent(
-                    role='Product Manager & Orchestrator',
-                    goal='Oversee the entire operational workflow, split tasks logically, delegate to Coder/Reviewer, and compile the perfect final delivery.',
-                    backstory='You are the central brain. You coordinate between the client request, developer, and reviewer. You manage the team dynamically without direct tool usage.',
+                    role='Project Manager',
+                    goal='Deconstruct tasks logically, delegate tasks efficiently to workers, and compile concise results.',
+                    backstory='An efficient orchestrator who manages team workflow directly without text bloat.',
                     llm=agent_llm,
                     verbose=True
                 )
@@ -137,7 +143,7 @@ if st.button("🚀 Activate Hierarchical Crew"):
                 # Task Definition
                 crew_task = Task(
                     description=task_input,
-                    expected_output='A finalized, reviewed product including code verification logs and confirmation of the zipped files if file creation was required.',
+                    expected_output='A clean, finalized solution report with execution results. If file creation was requested, confirm file name.',
                     agent=manager_agent
                 )
                 
