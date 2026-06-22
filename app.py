@@ -42,7 +42,6 @@ def python_executor_tool(code: str) -> str:
     import sys
     from io import StringIO
     
-    # Clean code formatting if wrapped in markdown
     if code.startswith("```python"):
         code = code[9:-3]
     elif code.startswith("```"):
@@ -75,7 +74,7 @@ def file_creator_tool(filename: str, content: str) -> str:
         return f"File Creation Error: {str(e)}"
 
 
-# Sidebar Configuration (Model Updated Here)
+# Sidebar Configuration
 with st.sidebar:
     st.header("⚙️ Crew Configuration")
     groq_api_key = st.text_input("Enter Groq API Key:", type="password")
@@ -107,13 +106,13 @@ if st.button("🚀 Activate Hierarchical Crew"):
                     temperature=0.1
                 )
                 
-                # 1. CODER AGENT
+                # 1. CODER AGENT (Ab saare tools iske paas hain!)
                 coder_agent = Agent(
-                    role='Senior Python Developer',
-                    goal='Write clean, bug-free Python code and execute it using tools to verify it works flawlessly.',
-                    backstory='You are a master coder. You write code, test it using the Python Code Executor tool, look at the error logs if any, fix it, and only output 100% verified scripts.',
+                    role='Senior Python Developer and Researcher',
+                    goal='Write clean, bug-free Python code, perform web searches if needed, and execute code using tools to verify it works flawlessly.',
+                    backstory='You are a master coder and analytical investigator. You can look up data, write scripts, test them using the Python Code Executor tool, and save final verified products.',
                     llm=agent_llm,
-                    tools=[python_executor_tool, file_creator_tool],
+                    tools=[custom_search_tool, python_executor_tool, file_creator_tool], # <-- Search tool yahan shift kar diya
                     verbose=True
                 )
                 
@@ -126,13 +125,12 @@ if st.button("🚀 Activate Hierarchical Crew"):
                     verbose=True
                 )
                 
-                # 3. MANAGER AGENT
+                # 3. MANAGER AGENT (No tools assigned - Strictly Management)
                 manager_agent = Agent(
                     role='Product Manager & Orchestrator',
                     goal='Oversee the entire operational workflow, split tasks logically, delegate to Coder/Reviewer, and compile the perfect final delivery.',
-                    backstory='You are the central brain. You coordinate between the client request, web research, developer, and reviewer. You manage the team dynamically.',
+                    backstory='You are the central brain. You coordinate between the client request, developer, and reviewer. You manage the team dynamically without direct tool usage.',
                     llm=agent_llm,
-                    tools=[custom_search_tool],
                     verbose=True
                 )
                 
