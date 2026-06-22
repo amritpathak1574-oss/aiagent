@@ -1,123 +1,182 @@
 import streamlit as st
 import os
 import requests
-from crewai import Agent, Task, Crew, LLM
+import zipfile
+from crewai import Agent, Task, Crew, LLM, Process
 from crewai.tools import tool
 
 # Streamlit Page Configuration
-st.set_page_config(page_title="Supercharged Groq Agent", page_icon="🚀", layout="wide")
+st.set_page_config(page_title="Manus-Style Hierarchical Crew", page_icon="🧠", layout="wide")
 
-st.title("🚀 Supercharged Groq AI Agent (With Custom Web Search)")
-st.write("Yeh agent live internet search kar sakta hai aur output file download karne ka option deta hai!")
+st.title("🧠 Hierarchical AI Crew (Manus AI Lite Architecture)")
+st.write("Isme ek Manager, ek Coder, aur ek Reviewer agent milkar aapka kaam karte hain aur code execute bhi kar sakte hain!")
 
-# --- DUNIYA KA SABSE STABLE CUSTOM SEARCH TOOL ---
+# --- TOOL 1: WEB SEARCH TOOL ---
 @tool("Web Search Tool")
 def custom_search_tool(query: str) -> str:
-    """Search the internet for the given query and return results. Use this whenever the user asks about recent events, latest tech, or news."""
+    """Search the internet for any given query to get the latest 2026 data."""
     try:
-        # DuckDuckGo ka public API endpoint use karke direct HTML results fetch karna
         url = f"https://html.duckduckgo.com/html/?q={query}"
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+        headers = {"User-Agent": "Mozilla/5.0"}
         response = requests.get(url, headers=headers, timeout=10)
-        
         if response.status_code == 200:
-            # Simple text parsing taaki heavy BeautifulSoup ki zaroorat na pade
             text = response.text
-            # Top snippets extract karke clean format me return kar dena
             snippets = []
             start = 0
-            for _ in range(5):  # Top 5 results nikalenge
+            for _ in range(3):
                 start = text.find('class="result__snippet"', start)
-                if start == -1:
-                    break
+                if start == -1: break
                 start = text.find('>', start) + 1
                 end = text.find('</a>', start)
-                snippet = text[start:end].replace('<b>', '').replace('</b>', '').strip()
-                snippets.append(snippet)
+                snippets.append(text[start:end].replace('<b>', '').replace('</b>', '').strip())
                 start = end
-            
-            if snippets:
-                return "\n\n".join(snippets)
-            
-        return "Bhai, search results nahi mil paaye, par internet check kiya tha."
+            return "\n\n".join(snippets) if snippets else "No results found."
+        return "Search failed."
     except Exception as e:
-        return f"Search error: {str(e)}"
+        return f"Error: {str(e)}"
 
-# Sidebar Setup
+# --- TOOL 2: PYTHON REPL / CODE EXECUTOR TOOL ---
+@tool("Python Code Executor")
+def python_executor_tool(code: str) -> str:
+    """Execute arbitrary Python code securely in the background and return stdout/stderr output. Use this to verify scripts or run calculations."""
+    import sys
+    from io import StringIO
+    
+    # Clean code formatting if wrapped in markdown
+    if code.startswith("```python"):
+        code = code[9:-3]
+    elif code.startswith("```"):
+        code = code[3:-3]
+        
+    old_stdout = sys.stdout
+    redirected_output = sys.stdout = StringIO()
+    try:
+        exec(code, {}, {})
+        sys.stdout = old_stdout
+        return redirected_output.getvalue() if redirected_output.getvalue() else "Code executed successfully with no print output."
+    except Exception as e:
+        sys.stdout = old_stdout
+        return f"Execution Error: {str(e)}"
+
+# --- TOOL 3: FILE WRITER & ZIPPER TOOL ---
+@tool("File Creator and Zipper")
+def file_creator_tool(filename: str, content: str) -> str:
+    """Create a file with specific content and automatically pack it into a deployable zip file called 'project_output.zip'."""
+    try:
+        with open(filename, "w", encoding="utf-8") as f:
+            f.write(content)
+            
+        zip_name = "project_output.zip"
+        with zipfile.ZipFile(zip_name, 'w') as zipf:
+            zipf.write(filename)
+            
+        return f"Successfully created '{filename}' and packed it inside '{zip_name}'!"
+    except Exception as e:
+        return f"File Creation Error: {str(e)}"
+
+
+# Sidebar Configuration (Model Updated Here)
 with st.sidebar:
-    st.header("⚙️ Configuration")
+    st.header("⚙️ Crew Configuration")
     groq_api_key = st.text_input("Enter Groq API Key:", type="password")
     
     model_choice = st.selectbox(
-        "Select Groq Model:",
-        ["llama3-70b-8192", "llama-3.3-70b-versatile", "mixtral-8x7b-32768"]
+        "Select Core LLM Engine:",
+        ["llama-3.3-70b-versatile", "llama3-70b-8192", "llama3-8b-8192", "mixtral-8x7b-32768"]
     )
-    st.info("💡 Llama3-70b custom tools ko sabse achhe se execute karta hai.")
+    st.info("💡 Pro Tip: 'llama-3.3-70b-versatile' naye tools aur complex workflow ke liye sabse best aur accurate hai.")
 
-# Main Task Input
+# Main input layout
 task_input = st.text_area(
-    "📝 Agent ko kya task ya research kaam dena hai?", 
-    placeholder="Example: Search the internet for the top AI trends in 2026 and summarize them."
+    "🛸 Apni team ko bada task assign karein:", 
+    placeholder="Example: Write a python script to calculate fibonacci series up to 10 numbers, execute it to verify if it works, and save it to a file."
 )
 
-if st.button("🔥 Run Advanced Agent"):
+if st.button("🚀 Activate Hierarchical Crew"):
     if not groq_api_key:
-        st.error("Bhai, pehle sidebar me Groq API Key daalo! 😅")
+        st.error("Bhai, bina Groq API Key ke team kaam nahi karegi! 😅")
     elif not task_input.strip():
-        st.warning("Kuch task toh likho!")
+        st.warning("Kuch task toh batao team ko!")
     else:
-        with st.spinner("🕵️‍♂️ Agent internet par research kar raha hai..."):
+        with st.spinner("🕵️‍♂️ Manager Agent planning kar raha hai aur baaki team ko instructions bhej raha hai..."):
             try:
-                # 1. Native LLM Setup
+                # Common LLM instance
                 agent_llm = LLM(
                     model=f"groq/{model_choice}",
                     api_key=groq_api_key,
-                    temperature=0.2
+                    temperature=0.1
                 )
                 
-                # 2. Agent with Custom TOOL
-                researcher_agent = Agent(
-                    role='Advanced Research and Execution Specialist',
-                    goal='To look up information on the internet and execute tasks with absolute accuracy.',
-                    backstory="""You are an elite autonomous agent equipped with internet access. 
-                    When asked about recent events or technical data, you use your Web Search Tool to find facts first, 
-                    then synthesize a flawless response.""",
-                    verbose=True,
-                    allow_delegation=False,
+                # 1. CODER AGENT
+                coder_agent = Agent(
+                    role='Senior Python Developer',
+                    goal='Write clean, bug-free Python code and execute it using tools to verify it works flawlessly.',
+                    backstory='You are a master coder. You write code, test it using the Python Code Executor tool, look at the error logs if any, fix it, and only output 100% verified scripts.',
                     llm=agent_llm,
-                    tools=[custom_search_tool]  # <-- Humara custom native tool link ho gaya!
+                    tools=[python_executor_tool, file_creator_tool],
+                    verbose=True
                 )
                 
-                # 3. Task Setup
-                custom_task = Task(
+                # 2. REVIEWER AGENT
+                reviewer_agent = Agent(
+                    role='Quality Assurance & Code Reviewer',
+                    goal='Review the code, audit the logical output, and check for any conceptual or security loopholes.',
+                    backstory='You are a meticulous inspector. You double-check the developer\'s work. If something is missing, you suggest final structural improvements before delivery.',
+                    llm=agent_llm,
+                    verbose=True
+                )
+                
+                # 3. MANAGER AGENT
+                manager_agent = Agent(
+                    role='Product Manager & Orchestrator',
+                    goal='Oversee the entire operational workflow, split tasks logically, delegate to Coder/Reviewer, and compile the perfect final delivery.',
+                    backstory='You are the central brain. You coordinate between the client request, web research, developer, and reviewer. You manage the team dynamically.',
+                    llm=agent_llm,
+                    tools=[custom_search_tool],
+                    verbose=True
+                )
+                
+                # Task Definition
+                crew_task = Task(
                     description=task_input,
-                    expected_output='A highly comprehensive, factual response backed by the latest web search data if needed.',
-                    agent=researcher_agent
+                    expected_output='A finalized, reviewed product including code verification logs and confirmation of the zipped files if file creation was required.',
+                    agent=manager_agent
                 )
                 
-                # 4. Crew Setup
-                agent_crew = Crew(
-                    agents=[researcher_agent],
-                    tasks=[custom_task]
+                # Hierarchical Crew Setup
+                manus_crew = Crew(
+                    agents=[coder_agent, reviewer_agent],
+                    tasks=[crew_task],
+                    manager_agent=manager_agent,
+                    process=Process.hierarchical
                 )
                 
-                # Execute
-                final_result = agent_crew.kickoff()
-                result_text = str(final_result)
+                # Run the whole system
+                final_output = manus_crew.kickoff()
+                result_text = str(final_output)
                 
-                # 5. UI Output Display
-                st.success("✅ Task Completed Successfully!")
-                st.subheader("🏁 Agent Final Output:")
+                st.success("🎯 Mission Accomplished! Team has delivered.")
+                st.subheader("🏁 Final Solution Package:")
                 st.markdown(result_text)
                 
-                # Download Button
+                # Check if zip file was created
                 st.write("---")
+                if os.path.exists("project_output.zip"):
+                    with open("project_output.zip", "rb") as fp:
+                        st.download_button(
+                            label="🎁 Download Project Files (.zip)",
+                            data=fp,
+                            file_name="project_output.zip",
+                            mime="application/zip"
+                        )
+                
+                # Standard Markdown backup download
                 st.download_button(
-                    label="📥 Download Output as Markdown (.md)",
+                    label="📄 Download Response Summary (.md)",
                     data=result_text,
-                    file_name="agent_output.md",
+                    file_name="crew_summary.md",
                     mime="text/markdown"
                 )
                 
             except Exception as e:
-                st.error(f"Oops! Kuch dikkat aayi bhai: {e}")
+                st.error(f"Oops! Crew meeting me gaddbadd hui: {e}")
