@@ -44,8 +44,7 @@ def python_executor_tool(code: str) -> str:
     
     if code.startswith("```python"):
         code = code[9:-3]
-    elif code.startswith("
-```"):
+    elif code.startswith("```"):
         code = code[3:-3]
         
     old_stdout = sys.stdout
@@ -112,7 +111,7 @@ if st.button("🚀 Activate Hierarchical Crew"):
                     max_tokens=1000  # Token saving parameter
                 )
                 
-                # 1. CODER AGENT (Short Backstory = Token Saved)
+                # 1. CODER AGENT
                 coder_agent = Agent(
                     role='Python Developer',
                     goal='Write clean code, run web searches, and use tools to verify and save final scripts.',
