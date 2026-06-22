@@ -44,8 +44,7 @@ def python_executor_tool(code: str) -> str:
     
     if code.startswith("```python"):
         code = code[9:-3]
-    elif code.startswith("
-```"):
+    elif code.startswith("```"):
         code = code[3:-3]
         
     old_stdout = sys.stdout
@@ -104,11 +103,11 @@ if st.button("🚀 Activate Hierarchical Crew"):
     else:
         with st.spinner("🕵️‍♂️ Team strict boundaries me reh kar kaam kar rahi hai..."):
             try:
-                # Common LLM setup
+                # Common LLM setup with temperature 0 to avoid random behavior
                 agent_llm = LLM(
                     model=f"groq/{model_choice}",
                     api_key=groq_api_key,
-                    temperature=0.0, # Temperature 0 kiya taaki gappe na maare model!
+                    temperature=0.0,
                     max_tokens=1000
                 )
                 
@@ -140,8 +139,7 @@ if st.button("🚀 Activate Hierarchical Crew"):
                     verbose=True
                 )
                 
-                # --- AUTO-ENGINEERED STRICT PROMPT PACKAGING ---
-                # Hum user ke prompt ko ek strict instructions wrapper me band kar rahe hain
+                # AUTO-ENGINEERED STRICT PROMPT PACKAGING
                 strict_system_prompt = f"""
                 USER REQUEST: {task_input}
                 
