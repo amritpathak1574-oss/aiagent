@@ -11,8 +11,7 @@ st.set_page_config(page_title="Manus-Style Hierarchical Crew", page_icon="🧠",
 st.title("🧠 Hierarchical AI Crew (Manus AI Lite Architecture)")
 st.write("Isme ek Manager, ek Coder, aur ek Reviewer agent milkar aapka kaam karte hain aur code execute bhi kar sakte hain!")
 
-# --- TOOL 1: FIXED WEB SEARCH TOOL ---
-# Iska naam humne 'web_search' kar diya hai, taaki LLM confuse na ho
+# --- TOOL 1: WEB SEARCH TOOL ---
 @tool("web_search")
 def custom_search_tool(query: str) -> str:
     """Useful to search the internet for web results, latest news, and articles about any topic. Input should be a simple search query string."""
@@ -45,7 +44,8 @@ def python_executor_tool(code: str) -> str:
     
     if code.startswith("```python"):
         code = code[9:-3]
-    elif code.startswith("```"):
+    elif code.startswith("
+```"):
         code = code[3:-3]
         
     old_stdout = sys.stdout
@@ -83,17 +83,17 @@ with st.sidebar:
     model_choice = st.selectbox(
         "Select Core LLM Engine:",
         [
-            "llama-3.1-8b-instant",       # High limit, zero rate limit error, super fast
-            "llama-3.3-70b-versatile",    # Ultra smart reasoning
-            "gemma2-9b-it"                # Fast and efficient fallback
+            "llama-3.1-8b-instant",       
+            "llama-3.3-70b-versatile",    
+            "gemma2-9b-it"                
         ]
     )
-    st.info("💡 Bhai, function validation error se bachne ke liye 'llama-3.3-70b-versatile' use karein toh better hai, woh tools sahi se call karta hai.")
+    st.info("💡 Pro Tip: 'llama-3.3-70b-versatile' use karein aur use real factual analysis karne dein.")
 
 # Main input layout
 task_input = st.text_area(
     "🛸 Apni team ko bada task assign karein:", 
-    placeholder="Example: Search for Claude Fable 5, write a python code to print it, run the code, and save it to a file named fable.py"
+    placeholder="Example: Search for Claude Fable 5, write a python code to print it, run the code, and save it to a file."
 )
 
 if st.button("🚀 Activate Hierarchical Crew"):
@@ -102,21 +102,21 @@ if st.button("🚀 Activate Hierarchical Crew"):
     elif not task_input.strip():
         st.warning("Kuch task toh batao team ko!")
     else:
-        with st.spinner("🕵️‍♂️ Team function validation checks clear karke kaam shuru kar rahi hai..."):
+        with st.spinner("🕵️‍♂️ Team strict boundaries me reh kar kaam kar rahi hai..."):
             try:
-                # Optimized LLM Instance
+                # Common LLM setup
                 agent_llm = LLM(
                     model=f"groq/{model_choice}",
                     api_key=groq_api_key,
-                    temperature=0.1,
+                    temperature=0.0, # Temperature 0 kiya taaki gappe na maare model!
                     max_tokens=1000
                 )
                 
                 # 1. CODER AGENT
                 coder_agent = Agent(
                     role='Python Developer',
-                    goal='Write clean code, run web searches using web_search, and use tools to verify and save final scripts.',
-                    backstory='An expert programmer focused strictly on writing working code, using web_search for queries, and saving it via tools.',
+                    goal='Search real info using web_search, write code using ONLY print statements, run it, and save it.',
+                    backstory='You never use tkinter, tkinter is strictly banned. You only use web_search to find facts, write simple prints, test them, and write files.',
                     llm=agent_llm,
                     tools=[custom_search_tool, python_executor_tool, file_creator_tool],
                     verbose=True
@@ -124,30 +124,41 @@ if st.button("🚀 Activate Hierarchical Crew"):
                 
                 # 2. REVIEWER AGENT
                 reviewer_agent = Agent(
-                    role='Code Reviewer',
-                    goal='Review the code logic and ensure correctness before finalizing output.',
-                    backstory='A swift quality controller who verifies code accuracy without unnecessary words.',
+                    role='Code Auditor',
+                    goal='Strictly reject any code containing tkinter, root.mainloop, or fake data.',
+                    backstory='You ensure the coder actually used web_search and did not hallucinate fake fables like Aesop.',
                     llm=agent_llm,
                     verbose=True
                 )
                 
-                # 3. MANAGER AGENT (Strictly Management - No tools)
+                # 3. MANAGER AGENT
                 manager_agent = Agent(
-                    role='Project Manager',
-                    goal='Deconstruct tasks logically, delegate tasks efficiently to workers, and compile concise results.',
-                    backstory='An efficient orchestrator who manages team workflow directly without text bloat or tool confusion.',
+                    role='Strict Project Manager',
+                    goal='Force the team to use tools, prevent hallucinations, and coordinate structured delivery.',
+                    backstory='An ultimate boss who demands real data from search and ensures final files are zipped.',
                     llm=agent_llm,
                     verbose=True
                 )
                 
-                # Task Definition
+                # --- AUTO-ENGINEERED STRICT PROMPT PACKAGING ---
+                # Hum user ke prompt ko ek strict instructions wrapper me band kar rahe hain
+                strict_system_prompt = f"""
+                USER REQUEST: {task_input}
+                
+                STRICT COMPLIANCE RULES FOR THE CREW:
+                1. You MUST execute 'web_search' for the exact terms requested. Do not assume or guess.
+                2. The python script MUST use only standard console outputs (print statements). 
+                3. DO NOT USE TKINTER, DO NOT USE GUI. GUI is strictly forbidden and will break the platform.
+                4. You MUST invoke 'file_creator_and_zipper' to save the code to the requested python file name.
+                5. If search returns limited data, print the actual search output instead of making up a fake story about tortoises or hares.
+                """
+                
                 crew_task = Task(
-                    description=task_input,
-                    expected_output='A clean, finalized solution report with execution results. If file creation was requested, confirm file name.',
+                    description=strict_system_prompt,
+                    expected_output='A verified console-based Python script containing actual search data, executed successfully, and saved into a zipped file.',
                     agent=manager_agent
                 )
                 
-                # Hierarchical Crew Setup
                 manus_crew = Crew(
                     agents=[coder_agent, reviewer_agent],
                     tasks=[crew_task],
@@ -155,7 +166,6 @@ if st.button("🚀 Activate Hierarchical Crew"):
                     process=Process.hierarchical
                 )
                 
-                # Run the whole system
                 final_output = manus_crew.kickoff()
                 result_text = str(final_output)
                 
@@ -163,7 +173,6 @@ if st.button("🚀 Activate Hierarchical Crew"):
                 st.subheader("🏁 Final Solution Package:")
                 st.markdown(result_text)
                 
-                # Check if zip file was created
                 st.write("---")
                 if os.path.exists("project_output.zip"):
                     with open("project_output.zip", "rb") as fp:
@@ -174,7 +183,6 @@ if st.button("🚀 Activate Hierarchical Crew"):
                             mime="application/zip"
                         )
                 
-                # Standard Markdown backup download
                 st.download_button(
                     label="📄 Download Response Summary (.md)",
                     data=result_text,
